@@ -1,0 +1,47 @@
+<?php
+
+use Drupal\autotext_widget\Plugin\Field\FieldWidget\AutotextWidget;
+use Drupal\Core\Entity\ContentEntityFormInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_alter().
+ */
+function autotext_widget_form_alter(array &$form, FormStateInterface $form_state) {
+  $form_object = $form_state->getFormObject();
+  if (!($form_object instanceof ContentEntityFormInterface)) {
+    return;
+  }
+
+  // Process Autotext as early as possible, right after form values are set to
+  // the entity.
+  $form['#entity_builders'][] = 'autotext_widget_content_entity_builder_callback';
+}
+
+/**
+ * The #entity_builders callback for the content entity forms.
+ */
+function autotext_widget_content_entity_builder_callback($entity_type_id, ContentEntityInterface $entity, array &$form, FormStateInterface $form_state) {
+  /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $form_display */
+  if ($form_display = $form_state->get('form_display')) {
+    AutotextWidget::processContentEntity($entity, $form_display);
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function autotext_widget_entity_presave(EntityInterface $entity) {
+  if ($entity instanceof ContentEntityInterface) {
+
+    // In case if en entity is created programmatically, we have to ensure that
+    // Autotext is processed.
+    // @todo: find a way to avoid this call if values are already set in the
+    // entity builder callback.
+    $form_display = EntityFormDisplay::collectRenderDisplay($entity, 'default');
+    AutotextWidget::processContentEntity($entity, $form_display);
+  }
+}

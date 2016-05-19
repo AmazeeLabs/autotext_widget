@@ -1,0 +1,7 @@
+name: Autotext widget
+type: module
+description: 'Provides the Autotext field widget.'
+core: 8.x
+
+dependencies:
+  - token
