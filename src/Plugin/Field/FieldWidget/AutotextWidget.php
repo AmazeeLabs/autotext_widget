@@ -2,6 +2,7 @@
 
 namespace Drupal\autotext_widget\Plugin\Field\FieldWidget;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Display\EntityFormDisplayInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -85,10 +86,25 @@ class AutotextWidget extends WidgetBase {
         $token_type = \Drupal::service('token.entity_mapper')
           ->getTokenTypeForEntityType($entity->getEntityTypeId());
         $new_value = \Drupal::token()
-          ->replace($widget->getSetting('text'), [$token_type => $entity], ['clear' => TRUE]);
+          ->replace($widget->getSetting('text'), [$token_type => $entity], [
+            'clear' => TRUE,
+            'callback' => [__CLASS__, 'processTokenReplacements'],
+          ]);
         $entity->set($field_name, $new_value);
       }
     }
+  }
+
+  /**
+   * Post-process callback for the token replace() calls.
+   */
+  public static function processTokenReplacements(&$replacements, $data, $options, $bubbleable_metadata) {
+
+    // There is now way to stop token html-escape field tokens. Just decode them
+    // back.
+    array_walk($replacements, function(&$text) {
+      $text = Html::decodeEntities((string) $text);
+    });
   }
 
 }
